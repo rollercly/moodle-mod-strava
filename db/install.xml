@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/strava/db" VERSION="20260910" COMMENT="XMLDB for mod_strava">
+  <TABLES>
+    <TABLE NAME="strava" COMMENT="Instancias de la actividad Strava">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+
+        <FIELD NAME="activitytype" TYPE="char" LENGTH="30" NOTNULL="true" DEFAULT="Run"
+               COMMENT="sport_type de Strava: Run, Ride, Hike, Swim, etc."/>
+        <FIELD NAME="targetdate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"
+               COMMENT="Fecha exacta en la que debe realizarse la prueba"/>
+        <FIELD NAME="tolerancedays" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0"
+               COMMENT="Margen en dias antes/despues de targetdate"/>
+        <FIELD NAME="selectionmode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="best"
+               COMMENT="best = coge la actividad mas cercana al objetivo; choose = el alumno elige"/>
+
+        <FIELD NAME="usedistance" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="distancetarget" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="metros"/>
+        <FIELD NAME="distanceweight" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="0-100"/>
+
+        <FIELD NAME="useduration" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="durationtarget" TYPE="int" LENGTH="10" NOTNULL="false"
+               COMMENT="segundos; objetivo = completar por debajo de este tiempo"/>
+        <FIELD NAME="durationweight" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="0-100"/>
+
+        <FIELD NAME="usespeed" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="speedtarget" TYPE="number" LENGTH="10" DECIMALS="3" NOTNULL="false" COMMENT="m/s"/>
+        <FIELD NAME="speedweight" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="0-100"/>
+
+        <FIELD NAME="useelevation" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="elevationtarget" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="metros"/>
+        <FIELD NAME="elevationweight" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="0-100"/>
+
+        <FIELD NAME="grade" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="100"
+               COMMENT="Nota maxima Moodle estandar"/>
+
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_course" TYPE="foreign" FIELDS="course" REFTABLE="course" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+
+    <TABLE NAME="strava_grade" COMMENT="Resultado y nota calculada por alumno e instancia">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="stravaid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+
+        <FIELD NAME="stravaactivityid" TYPE="int" LENGTH="20" NOTNULL="false"
+               COMMENT="ID de la actividad en Strava; null si no se encontro ninguna valida"/>
+        <FIELD NAME="sporttype" TYPE="char" LENGTH="30" NOTNULL="false"/>
+        <FIELD NAME="distance" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" COMMENT="metros"/>
+        <FIELD NAME="movingtime" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="segundos"/>
+        <FIELD NAME="averagespeed" TYPE="number" LENGTH="10" DECIMALS="3" NOTNULL="false" COMMENT="m/s"/>
+        <FIELD NAME="elevationgain" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" COMMENT="metros"/>
+        <FIELD NAME="startdate" TYPE="int" LENGTH="10" NOTNULL="false"/>
+
+        <FIELD NAME="rawgrade" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="false"/>
+        <FIELD NAME="breakdown" TYPE="text" NOTNULL="false" COMMENT="JSON con el desglose por objetivo"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending"
+               COMMENT="pending, graded, notsubmitted"/>
+
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_strava" TYPE="foreign" FIELDS="stravaid" REFTABLE="strava" REFFIELDS="id"/>
+        <KEY NAME="fk_userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="strava_user" UNIQUE="true" FIELDS="stravaid, userid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

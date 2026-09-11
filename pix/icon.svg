@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Strava orange circle background -->
+  <circle cx="50" cy="50" r="50" fill="#FC4C02"/>
+  <!-- Left chevron (taller) - hollow upward triangle -->
+  <polygon points="14,82 32,18 50,82 42,82 32,30 22,82" fill="white"/>
+  <!-- Right chevron (shorter) - hollow upward triangle -->
+  <polygon points="50,82 68,35 86,82 78,82 68,46 58,82" fill="white"/>
+</svg>
