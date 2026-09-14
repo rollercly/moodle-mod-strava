@@ -84,11 +84,7 @@ class sync_activities extends \core\task\scheduled_task {
         }
 
         try {
-            $activities = \local_stravaauth\api_client::get($userid, 'athlete/activities', [
-                'after'  => $windowstart,
-                'before' => $windowend,
-                'per_page' => 50,
-            ]);
+            $activities = $this->fetch_activities($userid, $windowstart, $windowend);
         } catch (\Exception $e) {
             mtrace("  usuario {$userid}: error al consultar Strava - " . $e->getMessage());
             return;
@@ -107,6 +103,18 @@ class sync_activities extends \core\task\scheduled_task {
         [$rawgrade, $breakdown] = grader::calculate($instance, $chosen);
 
         $this->save_result($instance, $userid, $chosen, $rawgrade, 'graded', $breakdown);
+    }
+
+    /**
+     * Recupera actividades desde la API de Strava para el usuario dado en la ventana indicada.
+     * Extraído como método protegido para permitir la sobreescritura en tests.
+     */
+    protected function fetch_activities(int $userid, int $windowstart, int $windowend): array {
+        return \local_stravaauth\api_client::get($userid, 'athlete/activities', [
+            'after'    => $windowstart,
+            'before'   => $windowend,
+            'per_page' => 50,
+        ]);
     }
 
     /**
