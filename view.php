@@ -50,34 +50,36 @@ if (!\local_stravaauth\api_client::is_connected($USER->id)) {
 }
 
 // --- Resultado del alumno (si ya se ha calculado) -------------------------
-$result = $DB->get_record('strava_grade', ['stravaid' => $instance->id, 'userid' => $USER->id]);
+if (has_capability('mod/strava:submit', $context, null, false)) {
+    $result = $DB->get_record('strava_grade', ['stravaid' => $instance->id, 'userid' => $USER->id]);
 
-echo $OUTPUT->heading(get_string('yourresult', 'mod_strava'), 3);
+    echo $OUTPUT->heading(get_string('yourresult', 'mod_strava'), 3);
 
-if (!$result || $result->status === 'pending') {
-    echo $OUTPUT->notification(get_string('resultpending', 'mod_strava',
-        userdate($windowend)), 'info');
-} else if ($result->status === 'notsubmitted') {
-    echo $OUTPUT->notification(get_string('resultnotsubmitted', 'mod_strava'), 'warning');
-} else {
-    $percentage = $instance->grade > 0 ? round(($result->rawgrade / $instance->grade) * 100, 1) : 0;
+    if (!$result || $result->status === 'pending') {
+        echo $OUTPUT->notification(get_string('resultpending', 'mod_strava',
+            userdate($windowend)), 'info');
+    } else if ($result->status === 'notsubmitted') {
+        echo $OUTPUT->notification(get_string('resultnotsubmitted', 'mod_strava'), 'warning');
+    } else {
+        $percentage = $instance->grade > 0 ? round(($result->rawgrade / $instance->grade) * 100, 1) : 0;
 
-    $table = new html_table();
-    $table->head = [get_string('metric', 'mod_strava'), get_string('objective', 'mod_strava'),
-        get_string('achieved', 'mod_strava')];
+        $table = new html_table();
+        $table->head = [get_string('metric', 'mod_strava'), get_string('objective', 'mod_strava'),
+            get_string('achieved', 'mod_strava')];
 
-    $breakdown = json_decode($result->breakdown ?? '{}', true) ?: [];
-    foreach ($breakdown as $metric => $row) {
-        $table->data[] = [
-            get_string('obj' . $metric, 'mod_strava'),
-            $row['target'],
-            $row['actual'] . ' (' . round($row['ratio'] * 100) . '%)',
-        ];
+        $breakdown = json_decode($result->breakdown ?? '{}', true) ?: [];
+        foreach ($breakdown as $metric => $row) {
+            $table->data[] = [
+                get_string('obj' . $metric, 'mod_strava'),
+                $row['target'],
+                $row['actual'] . ' (' . round($row['ratio'] * 100) . '%)',
+            ];
+        }
+
+        echo html_writer::tag('p', get_string('finalgrade', 'mod_strava',
+            (object) ['grade' => $result->rawgrade, 'max' => $instance->grade, 'pct' => $percentage]));
+        echo html_writer::table($table);
     }
-
-    echo html_writer::tag('p', get_string('finalgrade', 'mod_strava',
-        (object) ['grade' => $result->rawgrade, 'max' => $instance->grade, 'pct' => $percentage]));
-    echo html_writer::table($table);
 }
 
 // --- Panel de profesor: forzar sincronizacion manual -----------------------
