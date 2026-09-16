@@ -157,7 +157,7 @@ function strava_get_completion_state(stdClass $course, cm_info $cm, int $userid,
     global $DB;
 
     $instance = $DB->get_record('strava', ['id' => $cm->instance], '*', MUST_EXIST);
-    if (empty($instance->completionsubmit ?? true)) {
+    if (empty($instance->completionsubmit)) {
         return $type;
     }
 

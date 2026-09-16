@@ -82,7 +82,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $contextlist = provider::get_contexts_for_userid($data->student->id);
         $contextids  = $contextlist->get_contextids();
 
-        $this->assertContains($data->context->id, $contextids);
+        $this->assertContains($data->context->id, array_map('intval', $contextids));
     }
 
     public function test_get_contexts_for_userid_without_grade(): void {
@@ -105,7 +105,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         provider::get_users_in_context($userlist);
         $userids = $userlist->get_userids();
 
-        $this->assertContains($data->student->id, $userids);
+        $this->assertContains((int) $data->student->id, $userids);
     }
 
     public function test_export_user_data(): void {

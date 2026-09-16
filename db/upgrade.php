@@ -31,6 +31,17 @@ defined('MOODLE_INTERNAL') || die();
  * @return bool
  */
 function xmldb_strava_upgrade($oldversion) {
-    // No upgrade steps yet.
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2026091401) {
+        $table = new xmldb_table('strava');
+        $field = new xmldb_field('completionsubmit', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'grade');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_mod_savepoint(true, 2026091401, 'strava');
+    }
+
     return true;
 }
