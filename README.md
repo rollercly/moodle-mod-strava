@@ -1,318 +1,318 @@
-# mod_strava — Reto Strava para Moodle
+# mod_strava — Strava Challenge for Moodle
 
 ![Moodle 4.1+](https://img.shields.io/badge/Moodle-4.1%2B-orange)
-![Version](https://img.shields.io/badge/versión-0.1.0--alpha-blue)
+![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue)
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-purple)
-![Licencia](https://img.shields.io/badge/licencia-GPLv3-green)
-![Requiere local_stravaauth](https://img.shields.io/badge/requiere-local__stravaauth-red)
+![License](https://img.shields.io/badge/license-GPLv3-green)
+![Requires local_stravaauth](https://img.shields.io/badge/requires-local__stravaauth-red)
 
-Módulo de actividad de Moodle que convierte un objetivo deportivo registrado en [Strava](https://www.strava.com) en una **actividad calificable** dentro de un curso. El profesorado define los parámetros del reto (tipo de deporte, fecha, métricas objetivo) y el plugin sincroniza automáticamente los datos desde la API de Strava para calcular y publicar la nota en el libro de calificaciones.
+Moodle activity module that turns a sporting goal recorded in [Strava](https://www.strava.com) into a **gradable activity** inside a course. Teachers define the challenge parameters (sport type, date, target metrics) and the plugin automatically syncs data from the Strava API to calculate the grade and publish it in the gradebook.
 
-> **Dependencia obligatoria**: este plugin requiere que [`local_stravaauth`](../stravaauth/README.md) esté instalado y configurado previamente.
+> **Required dependency**: this plugin requires [`local_stravaauth`](../stravaauth/README.md) to be installed and configured first.
 
----
-
-## Índice
-
-- [¿Qué hace este plugin?](#qué-hace-este-plugin)
-- [Requisitos y dependencias](#requisitos-y-dependencias)
-- [Instalación](#instalación)
-- [Configuración del reto (profesorado)](#configuración-del-reto-profesorado)
-- [Vista del alumno/a](#vista-del-alumnoa)
-- [Sistema de calificación](#sistema-de-calificación)
-- [Tarea programada de sincronización](#tarea-programada-de-sincronización)
-- [Sincronización manual](#sincronización-manual)
-- [Capacidades y roles](#capacidades-y-roles)
-- [Base de datos](#base-de-datos)
-- [Privacidad y RGPD](#privacidad-y-rgpd)
-- [Referencia de la API de Strava](#referencia-de-la-api-de-strava)
+*Documentación en español: [README.es.md](README.es.md).*
 
 ---
 
-## ¿Qué hace este plugin?
+## Table of contents
+
+- [What does this plugin do?](#what-does-this-plugin-do)
+- [Requirements and dependencies](#requirements-and-dependencies)
+- [Installation](#installation)
+- [Challenge configuration (teachers)](#challenge-configuration-teachers)
+- [Student view](#student-view)
+- [Grading system](#grading-system)
+- [Scheduled sync task](#scheduled-sync-task)
+- [Manual sync](#manual-sync)
+- [Capabilities and roles](#capabilities-and-roles)
+- [Database](#database)
+- [Privacy and GDPR](#privacy-and-gdpr)
+- [Strava API reference](#strava-api-reference)
+- [License](#license)
+
+---
+
+## What does this plugin do?
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  PROFESOR/A                                                     │
-│  Define el reto: tipo de actividad, fecha objetivo,            │
-│  métricas (distancia, tiempo, velocidad, desnivel) y pesos     │
+│  TEACHER                                                        │
+│  Defines the challenge: activity type, target date,             │
+│  metrics (distance, time, speed, elevation) and weights         │
 └───────────────────────────┬─────────────────────────────────────┘
-                            │ crea instancia mod_strava
+                            │ creates a mod_strava instance
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  ALUMNO/A                                                       │
-│  1. Vincula su cuenta de Strava (via local_stravaauth)          │
-│  2. Realiza la actividad deportiva en la fecha indicada         │
-│  3. Sube la actividad a Strava (desde su móvil/dispositivo GPS) │
+│  STUDENT                                                        │
+│  1. Links their Strava account (via local_stravaauth)           │
+│  2. Performs the sporting activity on the given date            │
+│  3. Uploads the activity to Strava (phone / GPS device)         │
 └───────────────────────────┬─────────────────────────────────────┘
-                            │ después del cierre de la ventana
+                            │ after the date window closes
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  TAREA PROGRAMADA (03:30 cada noche)                           │
-│  1. Consulta actividades del alumno/a en la API de Strava      │
-│  2. Filtra por tipo de deporte y ventana de fechas             │
-│  3. Elige la actividad de mejor puntuación                     │
-│  4. Calcula la nota ponderada por objetivos                    │
-│  5. Publica la nota en el libro de calificaciones              │
+│  SCHEDULED TASK (03:30 every night)                             │
+│  1. Queries the student's activities in the Strava API          │
+│  2. Filters by sport type and date window                       │
+│  3. Picks the best-scoring activity                             │
+│  4. Calculates the grade weighted by target                     │
+│  5. Publishes the grade in the gradebook                        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Requisitos y dependencias
+## Requirements and dependencies
 
-| Componente | Versión mínima | Notas |
+| Component | Minimum version | Notes |
 |---|---|---|
 | Moodle | 4.1 (build 2022112800) | |
 | PHP | 8.1 | |
-| **local_stravaauth** | 2026091000 | **Obligatorio** — gestiona OAuth2 y el cliente de API |
+| **local_stravaauth** | 2026091000 | **Required** — handles OAuth2 and the API client |
 
-### Instalar `local_stravaauth` primero
+### Install `local_stravaauth` first
 
-Sigue las instrucciones de configuración de [`local_stravaauth`](../stravaauth/README.md) (registro de la app en Strava, Client ID y Client Secret) antes de instalar este módulo.
+Follow the setup instructions of [`local_stravaauth`](../stravaauth/README.md) (Strava app registration, Client ID and Client Secret) before installing this module.
 
 ---
 
-## Instalación
+## Installation
 
 ```bash
-# Desde la raíz de Moodle
+# From the Moodle root
 cp -r mod/strava /var/www/html/moodle/mod/strava
 
-# O mediante Git
+# Or via Git
 git clone <repo> mod/strava
 ```
 
-Accede a **Administración del sitio → Notificaciones** para instalar las tablas de base de datos (`mdl_strava` y `mdl_strava_grade`).
+Go to **Site administration → Notifications** to install the database tables (`mdl_strava` and `mdl_strava_grade`).
 
 ---
 
-## Configuración del reto (profesorado)
+## Challenge configuration (teachers)
 
-Para añadir un Reto Strava en un curso, el profesorado sigue el flujo estándar de Moodle (*Activar edición → Añadir actividad → Reto Strava*) y rellena el formulario:
+To add a Strava Challenge to a course, teachers follow the standard Moodle flow (*Turn editing on → Add an activity or resource → Strava Challenge*) and fill in the form:
 
-### Sección general
+### General section
 
-| Campo | Descripción |
+| Field | Description |
 |---|---|
-| **Nombre** | Nombre visible del reto en el curso |
-| **Descripción** | Texto explicativo para el alumnado |
+| **Name** | Visible name of the challenge in the course |
+| **Description** | Explanatory text for students |
 
-### Configuración del reto Strava
+### Strava challenge settings
 
-| Campo | Descripción |
+| Field | Description |
 |---|---|
-| **Tipo de actividad** | Deporte que cuenta: Running, Trail Running, Ciclismo, MTB, Senderismo, Caminar, Natación |
-| **Fecha objetivo** | Día exacto en el que el alumno/a debe realizar la actividad |
-| **Tolerancia (± días)** | Margen de días antes/después de la fecha objetivo que también se consideran válidos (0–7) |
-| **Si hay varias actividades** | `Mejor puntuación` (automático) o `El alumno elige` |
+| **Activity type** | Sport that counts: Running, Trail Running, Cycling, Mountain Bike, Hiking, Walking, Swimming |
+| **Target date** | Exact day on which the student must perform the activity |
+| **Tolerance (± days)** | Number of days before/after the target date that are also considered valid (0–7) |
+| **If there are several activities** | `Best score` (automatic) or `Student chooses` |
 
-> **Ejemplo**: Fecha objetivo = 15 marzo, Tolerancia = 2 días → ventana válida del 13 al 17 de marzo.
+> **Example**: Target date = 15 March, Tolerance = 2 days → valid window from 13 to 17 March.
 
-### Objetivos y ponderación
+### Targets and weighting
 
-El reto puede evaluar hasta **cuatro métricas** de forma simultánea. Cada métrica tiene un **objetivo** y un **peso** (los pesos de las métricas activas deben sumar exactamente 100 %):
+The challenge can evaluate up to **four metrics** at the same time. Each metric has a **target** and a **weight** (the weights of the active metrics must add up to exactly 100 %):
 
-| Métrica | Unidad (formulario) | Almacenamiento interno | Tipo de objetivo |
+| Metric | Unit (form) | Internal storage | Target type |
 |---|---|---|---|
-| **Distancia** | km | metros | Cuanto más, mejor |
-| **Tiempo** | minutos | segundos | Cuanto menos, mejor |
-| **Velocidad media** | km/h | m/s | Cuanto más, mejor |
-| **Desnivel positivo** | metros | metros | Cuanto más, mejor |
+| **Distance** | km | metres | The more, the better |
+| **Time** | minutes | seconds | The less, the better |
+| **Average speed** | km/h | m/s | The more, the better |
+| **Elevation gain** | metres | metres | The more, the better |
 
-**Ejemplo de configuración válida:**
+**Example of a valid configuration:**
 
 ```
-✅ Distancia:    10 km   — peso 50 %
-✅ Velocidad:     5 km/h — peso 30 %
-✅ Desnivel:    200 m    — peso 20 %
+✅ Distance:     10 km   — weight 50 %
+✅ Speed:         5 km/h — weight 30 %
+✅ Elevation:   200 m    — weight 20 %
                           ────────
                           TOTAL 100 %
 ```
 
-### Calificación
+### Grade
 
-El formulario incluye la sección estándar de calificación de Moodle. La nota máxima configurable se traduce proporcionalmente al grado de cumplimiento de los objetivos.
-
-![Formulario del reto](docs/img/mod_form.png)
-*(captura del formulario de creación del reto)*
+The form includes the standard Moodle grade section. The configurable maximum grade is scaled proportionally to how well the targets are met.
 
 ---
 
-## Vista del alumno/a
+## Student view
 
-Al acceder a la actividad, el alumno/a ve:
+When opening the activity, the student sees:
 
-1. **Ventana válida**: fechas de inicio y fin del periodo, y tipo de actividad requerido.
-2. **Estado de conexión con Strava**: si aún no ha vinculado su cuenta, aparece un botón *Conectar con Strava* que inicia el flujo OAuth2 de `local_stravaauth`.
-3. **Tu resultado**: estado del resultado y, una vez procesado, desglose de métricas y nota final.
+1. **Valid window**: start and end dates of the period, and the required activity type.
+2. **Strava connection status**: if the account is not linked yet, a *Connect with Strava* button starts the OAuth2 flow of `local_stravaauth`.
+3. **Your result**: result status and, once processed, the metric breakdown and final grade.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> SinVincular: Primera visita
-    SinVincular --> Vinculado: Hace clic en "Conectar con Strava" y autoriza
-    Vinculado --> Pendiente: Dentro de la ventana de fechas
-    Pendiente --> Calificado: Tarea nocturna procesa la actividad
-    Pendiente --> NoEnviado: Ventana cerrada, no hay actividad válida en Strava
-    Calificado --> [*]
-    NoEnviado --> [*]
+    [*] --> NotLinked: First visit
+    NotLinked --> Linked: Clicks "Connect with Strava" and authorises
+    Linked --> Pending: Inside the date window
+    Pending --> Graded: Nightly task processes the activity
+    Pending --> NotSubmitted: Window closed, no valid activity in Strava
+    Graded --> [*]
+    NotSubmitted --> [*]
 ```
 
-### Estados posibles del resultado
+### Possible result statuses
 
-| Estado | Descripción |
+| Status | Description |
 |---|---|
-| `pending` | La ventana de fechas aún no ha cerrado |
-| `graded` | Nota calculada y publicada en el libro de calificaciones |
-| `notsubmitted` | No se encontró ninguna actividad del tipo requerido en la ventana |
+| `pending` | The date window has not closed yet |
+| `graded` | Grade calculated and published in the gradebook |
+| `notsubmitted` | No activity of the required type was found in the window |
 
 ---
 
-## Sistema de calificación
+## Grading system
 
-La nota se calcula de forma **ponderada** según los objetivos configurados:
-
-```
-nota_final = Σ (ratio_i × peso_i) / Σ peso_i  ×  nota_máxima
-```
-
-Donde `ratio_i` para cada métrica es:
-
-- **Distancia, velocidad, desnivel** (más es mejor): `min(1.0, valor_real / objetivo)`
-- **Tiempo** (menos es mejor): `min(1.0, objetivo / tiempo_real)`
-
-El ratio se satura en `1.0`: superar el objetivo no da más puntos que alcanzarlo.
-
-**Ejemplo de cálculo:**
+The grade is calculated as a **weighted average** of the configured targets:
 
 ```
-Objetivo distancia:  10 km  peso 50 %  →  el alumno recorre 8 km  →  ratio = 0.80
-Objetivo velocidad:   5 km/h peso 30 %  →  velocidad media 6 km/h  →  ratio = 1.00 (saturado)
-Objetivo desnivel:  200 m   peso 20 %  →  desnivel real  150 m    →  ratio = 0.75
-
-Nota = (0.80×50 + 1.00×30 + 0.75×20) / 100 × 10
-     = (40 + 30 + 15) / 100 × 10
-     = 0.85 × 10 = 8.5 / 10
+final_grade = Σ (ratio_i × weight_i) / Σ weight_i  ×  max_grade
 ```
 
-Si hay varias actividades válidas en la ventana, el plugin elige automáticamente la de **mejor puntuación** (`selectionmode = best`).
+Where `ratio_i` for each metric is:
+
+- **Distance, speed, elevation** (more is better): `min(1.0, actual_value / target)`
+- **Time** (less is better): `min(1.0, target / actual_time)`
+
+The ratio is capped at `1.0`: exceeding the target gives no more points than reaching it.
+
+**Calculation example:**
+
+```
+Distance target:   10 km   weight 50 %  →  student covers 8 km    →  ratio = 0.80
+Speed target:       5 km/h weight 30 %  →  average speed 6 km/h   →  ratio = 1.00 (capped)
+Elevation target: 200 m    weight 20 %  →  actual elevation 150 m  →  ratio = 0.75
+
+Grade = (0.80×50 + 1.00×30 + 0.75×20) / 100 × 10
+      = (40 + 30 + 15) / 100 × 10
+      = 0.85 × 10 = 8.5 / 10
+```
+
+If there are several valid activities in the window, the plugin automatically picks the one with the **best score** (`selectionmode = best`).
 
 ---
 
-## Tarea programada de sincronización
+## Scheduled sync task
 
-La tarea `mod_strava\task\sync_activities` se ejecuta automáticamente cada noche a las **03:30** y procesa todas las instancias cuya ventana de fechas ya ha cerrado:
+The `mod_strava\task\sync_activities` task runs automatically every night at **03:30** and processes all instances whose date window has already closed:
 
 ```mermaid
 flowchart TD
-    A[Tarea 03:30] --> B{¿Ventana cerrada?}
-    B -- No --> Z[Ignorar instancia]
-    B -- Sí --> C[Obtener alumnos con capability mod/strava:submit]
-    C --> D{¿Ya tiene resultado 'graded'?}
-    D -- Sí --> E[Saltar usuario]
-    D -- No --> F{¿Tiene cuenta Strava vinculada?}
-    F -- No --> G[Guardar estado 'notsubmitted']
-    F -- Sí --> H[Consultar athlete/activities en API Strava]
-    H --> I{¿Hay actividades del tipo correcto en la ventana?}
+    A[Task 03:30] --> B{Window closed?}
+    B -- No --> Z[Ignore instance]
+    B -- Yes --> C[Get students with capability mod/strava:submit]
+    C --> D{Already has a 'graded' result?}
+    D -- Yes --> E[Skip user]
+    D -- No --> F{Strava account linked?}
+    F -- No --> G[Save status 'notsubmitted']
+    F -- Yes --> H[Query athlete/activities in the Strava API]
+    H --> I{Any activity of the right type in the window?}
     I -- No --> G
-    I -- Sí --> J[Elegir la de mejor puntuación]
-    J --> K[Calcular nota ponderada]
-    K --> L[Guardar en strava_grade con estado 'graded']
-    L --> M[Publicar nota en libro de calificaciones]
+    I -- Yes --> J[Pick the best-scoring one]
+    J --> K[Calculate weighted grade]
+    K --> L[Save in strava_grade with status 'graded']
+    L --> M[Publish grade in the gradebook]
 ```
 
-La tarea puede gestionarse desde **Administración del sitio → Servidor → Tareas programadas**.
+The task can be managed from **Site administration → Server → Scheduled tasks**.
 
 ---
 
-## Sincronización manual
+## Manual sync
 
-El profesorado con la capacidad `mod/strava:manualsync` puede forzar una sincronización inmediata desde la propia página de la actividad mediante el botón **"Forzar sincronización ahora"**, sin esperar a la tarea nocturna.
+Teachers with the `mod/strava:manualsync` capability can force an immediate sync from the activity page itself using the **"Force sync now"** button, without waiting for the nightly task.
 
 ---
 
-## Capacidades y roles
+## Capabilities and roles
 
-| Capacidad | Descripción | Rol por defecto |
+| Capability | Description | Default role |
 |---|---|---|
-| `mod/strava:addinstance` | Añadir el módulo a un curso | Profesor editor, Gestor |
-| `mod/strava:view` | Ver la actividad | Estudiante, Profesor, Gestor |
-| `mod/strava:submit` | Participar en el reto (ser evaluado) | Estudiante |
-| `mod/strava:viewreports` | Ver los resultados de todos los alumnos | Profesor, Gestor |
-| `mod/strava:manualsync` | Forzar sincronización manual | Profesor editor, Gestor |
+| `mod/strava:addinstance` | Add the module to a course | Editing teacher, Manager |
+| `mod/strava:view` | View the activity | Student, Teacher, Manager |
+| `mod/strava:submit` | Take part in the challenge (be graded) | Student |
+| `mod/strava:viewreports` | View the results of all students | Teacher, Manager |
+| `mod/strava:manualsync` | Force a manual sync | Editing teacher, Manager |
 
 ---
 
-## Base de datos
+## Database
 
 ### `mdl_strava`
 
-Instancias de la actividad (una fila por reto añadido en un curso).
+Activity instances (one row per challenge added to a course).
 
-| Columna | Tipo | Descripción |
+| Column | Type | Description |
 |---|---|---|
-| `id` | INT | Clave primaria |
+| `id` | INT | Primary key |
 | `course` | INT | FK → `mdl_course.id` |
-| `name` | VARCHAR(255) | Nombre del reto |
-| `activitytype` | VARCHAR(30) | Tipo de deporte Strava (`Run`, `Ride`, `Hike`, etc.) |
-| `targetdate` | INT | Unix timestamp de la fecha objetivo |
-| `tolerancedays` | INT | Días de margen antes/después |
-| `selectionmode` | VARCHAR(20) | `best` o `choose` |
-| `usedistance` | TINYINT | 1 si la distancia está activa |
-| `distancetarget` | INT | Distancia objetivo en metros |
-| `distanceweight` | INT | Peso del objetivo distancia (0–100) |
-| `useduration` | TINYINT | 1 si el tiempo está activo |
-| `durationtarget` | INT | Tiempo objetivo en segundos |
-| `durationweight` | INT | Peso del objetivo tiempo (0–100) |
-| `usespeed` | TINYINT | 1 si la velocidad está activa |
-| `speedtarget` | FLOAT | Velocidad objetivo en m/s |
-| `speedweight` | INT | Peso del objetivo velocidad (0–100) |
-| `useelevation` | TINYINT | 1 si el desnivel está activo |
-| `elevationtarget` | INT | Desnivel objetivo en metros |
-| `elevationweight` | INT | Peso del objetivo desnivel (0–100) |
-| `grade` | FLOAT | Nota máxima de Moodle |
+| `name` | VARCHAR(255) | Challenge name |
+| `activitytype` | VARCHAR(30) | Strava sport type (`Run`, `Ride`, `Hike`, etc.) |
+| `targetdate` | INT | Unix timestamp of the target date |
+| `tolerancedays` | INT | Days of tolerance before/after |
+| `selectionmode` | VARCHAR(20) | `best` or `choose` |
+| `usedistance` | TINYINT | 1 if distance is enabled |
+| `distancetarget` | INT | Target distance in metres |
+| `distanceweight` | INT | Distance target weight (0–100) |
+| `useduration` | TINYINT | 1 if time is enabled |
+| `durationtarget` | INT | Target time in seconds |
+| `durationweight` | INT | Time target weight (0–100) |
+| `usespeed` | TINYINT | 1 if speed is enabled |
+| `speedtarget` | FLOAT | Target speed in m/s |
+| `speedweight` | INT | Speed target weight (0–100) |
+| `useelevation` | TINYINT | 1 if elevation is enabled |
+| `elevationtarget` | INT | Target elevation gain in metres |
+| `elevationweight` | INT | Elevation target weight (0–100) |
+| `grade` | FLOAT | Moodle maximum grade |
 
 ### `mdl_strava_grade`
 
-Resultado calculado por alumno/a e instancia.
+Calculated result per student and instance.
 
-| Columna | Tipo | Descripción |
+| Column | Type | Description |
 |---|---|---|
-| `id` | INT | Clave primaria |
+| `id` | INT | Primary key |
 | `stravaid` | INT | FK → `mdl_strava.id` |
 | `userid` | INT | FK → `mdl_user.id` |
-| `stravaactivityid` | INT | ID de la actividad en Strava |
-| `sporttype` | VARCHAR(30) | Tipo de deporte de la actividad elegida |
-| `distance` | FLOAT | Distancia real en metros |
-| `movingtime` | INT | Tiempo en movimiento en segundos |
-| `averagespeed` | FLOAT | Velocidad media en m/s |
-| `elevationgain` | FLOAT | Desnivel positivo en metros |
-| `rawgrade` | FLOAT | Nota calculada |
-| `breakdown` | TEXT | JSON con el desglose por objetivo |
-| `status` | VARCHAR(20) | `pending`, `graded` o `notsubmitted` |
+| `stravaactivityid` | INT | Activity ID in Strava |
+| `sporttype` | VARCHAR(30) | Sport type of the chosen activity |
+| `distance` | FLOAT | Actual distance in metres |
+| `movingtime` | INT | Moving time in seconds |
+| `averagespeed` | FLOAT | Average speed in m/s |
+| `elevationgain` | FLOAT | Elevation gain in metres |
+| `rawgrade` | FLOAT | Calculated grade |
+| `breakdown` | TEXT | JSON with the per-target breakdown |
+| `status` | VARCHAR(20) | `pending`, `graded` or `notsubmitted` |
 
 ---
 
-## Privacidad y RGPD
+## Privacy and GDPR
 
-El plugin implementa `\core_privacy\local\metadata\provider` y declara:
+The plugin implements `\core_privacy\local\metadata\provider` and declares:
 
-- **`strava_grade`**: datos de la actividad deportiva (distancia, tiempo, velocidad, desnivel) y la nota calculada de cada alumno/a.
-- **Datos externos**: se consultan actividades del usuario/a en la API de Strava; la autenticación es gestionada completamente por `local_stravaauth`.
-
----
-
-## Referencia de la API de Strava
-
-Este plugin consume el endpoint `GET /athlete/activities` de la API v3 de Strava. Para más información:
-
-- **Portal de desarrolladores**: [https://developers.strava.com/](https://developers.strava.com/)
-- **Referencia completa de la API v3**: [https://developers.strava.com/docs/reference/](https://developers.strava.com/docs/reference/)
-  - Endpoint usado: [`GET /athlete/activities`](https://developers.strava.com/docs/reference/#api-Activities-getLoggedInAthleteActivities)
-- **Crear y gestionar tu aplicación**: [https://www.strava.com/settings/api](https://www.strava.com/settings/api)
+- **`strava_grade`**: each student's sporting activity data (distance, time, speed, elevation) and the calculated grade.
+- **External data**: the user's activities are queried from the Strava API; authentication is handled entirely by `local_stravaauth`.
 
 ---
 
-## Licencia
+## Strava API reference
 
-GNU GPL v3 — consulta el fichero `LICENSE` o visita [gnu.org/licenses/gpl-3.0](https://www.gnu.org/licenses/gpl-3.0.html).
+This plugin consumes the `GET /athlete/activities` endpoint of the Strava API v3. For more information:
+
+- **Developer portal**: [https://developers.strava.com/](https://developers.strava.com/)
+- **Full API v3 reference**: [https://developers.strava.com/docs/reference/](https://developers.strava.com/docs/reference/)
+  - Endpoint used: [`GET /athlete/activities`](https://developers.strava.com/docs/reference/#api-Activities-getLoggedInAthleteActivities)
+- **Create and manage your application**: [https://www.strava.com/settings/api](https://www.strava.com/settings/api)
+
+---
+
+## License
+
+GNU GPL v3 or later — see the `LICENSE` file or visit [gnu.org/licenses/gpl-3.0](https://www.gnu.org/licenses/gpl-3.0.html).
